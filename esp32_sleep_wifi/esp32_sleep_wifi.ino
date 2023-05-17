@@ -47,9 +47,9 @@ void print_wakeup_reason(){
 // Wifi Setup
 #define BLYNK_SERIAL Serial
 
-#define BLYNK_TEMPLATE_ID     "TMPL7LuxdKLE"
-#define BLYNK_TEMPLATE_NAME   "Quickstart Template"
-#define BLYNK_AUTH_TOKEN      "RRnopBaH6JFnPpFCvg1gm4pjt6K3e3Hg"
+#define BLYNK_TEMPLATE_ID   "TMPL7LuxdKLE"
+#define BLYNK_TEMPLATE_NAME "Quickstart Template"
+#define BLYNK_AUTH_TOKEN    "RRnopBaH6JFnPpFCvg1gm4pjt6K3e3Hg"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
