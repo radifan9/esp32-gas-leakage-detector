@@ -47,16 +47,21 @@ void print_wakeup_reason(){
 // Wifi Setup
 #define BLYNK_SERIAL Serial
 
-#define BLYNK_TEMPLATE_ID   "TMPL7LuxdKLE"
+// #define BLYNK_TEMPLATE_ID   "TMPL7LuxdKLE"
+// #define BLYNK_TEMPLATE_NAME "Quickstart Template"
+// #define BLYNK_AUTH_TOKEN    "RRnopBaH6JFnPpFCvg1gm4pjt6K3e3Hg"
+
+// Andi anjing
+#define BLYNK_TEMPLATE_ID "TMPL6n3CG1IQu"
 #define BLYNK_TEMPLATE_NAME "Quickstart Template"
-#define BLYNK_AUTH_TOKEN    "RRnopBaH6JFnPpFCvg1gm4pjt6K3e3Hg"
+#define BLYNK_AUTH_TOKEN "CwRcV-iF8IcvUa3Cx4EkRr4va1LC749z"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
-char ssid[] = "inti";
-char pass[] = "laughtale";
+char ssid[] = "Pilat";
+char pass[] = "bayarpilat";
 
 void setup(){
   Serial.begin(9600);
