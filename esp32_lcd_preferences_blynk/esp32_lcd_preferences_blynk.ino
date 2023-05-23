@@ -19,13 +19,17 @@ char keys[ROWS][COLS] = {
   {'*', '0', '#', 'D'}
 };
 
-// define active Pin (4x4)
+// Define active Pin (4x4)
 byte rowPins[ROWS] = {0, 1, 2, 3}; // Connect to Keyboard Row Pin
 byte colPins[COLS] = {4, 5, 6, 7}; // Connect to Pin column of keypad.
 
 Keypad_I2C keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS, I2CADDR_KEYPAD, PCF8574);
 
 LiquidCrystal_I2C lcd(I2CADDR_LCD, 16, 2); // Initialize the LCD with the I2C address and size
+
+// Setup for flash memory
+#include <Preferences.h>
+Preferences preferences;
 
 // Setup for Blynk & WiFi
 #define BLYNK_PRINT Serial
@@ -41,12 +45,18 @@ String ssid = "";     // Variable to store the entered SSID
 String password = ""; // Variable to store the entered password
 char auth[] = BLYNK_AUTH_TOKEN;
 
+char ssid_char[20];
+char pass_char[20];
+
+BlynkTimer timer;
+
 enum State {
   ENTER_SSID,
   ENTER_PASSWORD,
   AUTHENTICATE,
   ACCESS_GRANTED,
-  ACCESS_DENIED
+  ACCESS_DENIED,
+  BLYNK_RUN
 };
 
 State currentState = ENTER_SSID; // Initial state
@@ -62,11 +72,6 @@ void setup() {
   lcd.backlight();       // Turn on the LCD backlight
   lcd.print("Enter SSID:"); // Display initial message on the LCD
 
-  // Read saved SSID and password from EEPROM
-  readFromEEPROM();
-
-  // Print the saved SSID and password to Serial Monitor
-  printFromEEPROM();
 }
 
 void loop() {
@@ -94,18 +99,8 @@ void loop() {
           lcd.clear();
           lcd.print("Authenticating...");
 
-          char ssid_char[20];
-          char pass_char[20];
-
           ssid.toCharArray(ssid_char, sizeof(ssid_char));
           password.toCharArray(pass_char, sizeof(pass_char));
-
-          Serial.print("SSID: ");
-          Serial.println(ssid_char);
-          Serial.print("pass: ");
-          Serial.println(pass_char);
-
-          Blynk.begin(auth, ssid_char, pass_char);
 
           currentState = AUTHENTICATE;
         } else if (key == '*') {
@@ -123,28 +118,39 @@ void loop() {
 
     case AUTHENTICATE:
       // Simulating authentication by comparing entered SSID and password against saved values
-      delay(2000);
-      if (ssid == "192168" && password == "1234") {
-        lcd.clear();
-        lcd.print("Access Granted");
-        currentState = ACCESS_GRANTED;
 
-        // Save SSID and password to EEPROM
-        saveToEEPROM();
+      Blynk.begin(auth, ssid_char, pass_char);
 
-        // Print the EEPROM contents to Serial Monitor
-        printFromEEPROM();
-      } else {
-        lcd.clear();
-        lcd.print("Access Denied");
-        currentState = ACCESS_DENIED;
-      }
-      delay(2000);
       lcd.clear();
-      lcd.print("Enter SSID:");
-      ssid = "";
-      password = "";
-      currentState = ENTER_SSID;
+      lcd.print("Wifi Connected.");
+
+      delay(2000);
+
+      currentState = BLYNK_RUN;
+      // if (ssid == "192168" && password == "1234") {
+      //   lcd.clear();
+      //   lcd.print("Access Granted");
+      //   currentState = ACCESS_GRANTED;
+
+      //   // Save SSID and password to EEPROM
+      //   saveToEEPROM();
+
+      //   // Print the EEPROM contents to Serial Monitor
+      //   printFromEEPROM();
+      // } else {
+      //   lcd.clear();
+      //   lcd.print("Access Denied");
+      //   currentState = ACCESS_DENIED;
+      // }
+
+
+
+      // delay(2000);
+      // lcd.clear();
+      // lcd.print("Enter SSID:");
+      // ssid = "";
+      // password = "";
+      // currentState = ENTER_SSID;
       break;
 
     case ACCESS_GRANTED:
@@ -153,6 +159,11 @@ void loop() {
 
     case ACCESS_DENIED:
       // Access denied, do something here
+      break;
+
+    case BLYNK_RUN:
+      Blynk.run();
+      timer.run();
       break;
   }
 }
