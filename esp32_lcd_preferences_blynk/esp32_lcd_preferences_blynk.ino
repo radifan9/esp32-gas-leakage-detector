@@ -52,17 +52,15 @@ enum State {
 State currentState = ENTER_SSID; // Initial state
 
 void setup() {
+  // Configuring Hardware
   Serial.begin(115200);
 
+  // Configuring I2C LCD and Keypad
   Wire.begin();          // Call the connection Wire
   keypad.begin();        // Call the connection for the keypad
   lcd.begin(16, 2);      // Initialize the LCD with 16 columns and 2 rows
   lcd.backlight();       // Turn on the LCD backlight
   lcd.print("Enter SSID:"); // Display initial message on the LCD
-
-  // Set the predefined SSID and password
-  // ssid = "192168";
-  // password = "1234";
 
   // Read saved SSID and password from EEPROM
   readFromEEPROM();
