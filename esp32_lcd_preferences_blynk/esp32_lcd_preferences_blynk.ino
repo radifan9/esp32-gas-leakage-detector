@@ -1,3 +1,4 @@
+// Setup for LCD & KEYPAD
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
@@ -26,10 +27,6 @@ Keypad_I2C keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS, I2CADDR_KEYPAD
 
 LiquidCrystal_I2C lcd(I2CADDR_LCD, 16, 2); // Initialize the LCD with the I2C address and size
 
-String ssid = "";     // Variable to store the entered SSID
-String password = ""; // Variable to store the entered password
-
-// Blynk Setup
 // Setup for Blynk & WiFi
 #define BLYNK_PRINT Serial
 #define BLYNK_TEMPLATE_ID "TMPL62PSbydOu"
@@ -40,6 +37,8 @@ String password = ""; // Variable to store the entered password
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
+String ssid = "";     // Variable to store the entered SSID
+String password = ""; // Variable to store the entered password
 char auth[] = BLYNK_AUTH_TOKEN;
 
 enum State {
