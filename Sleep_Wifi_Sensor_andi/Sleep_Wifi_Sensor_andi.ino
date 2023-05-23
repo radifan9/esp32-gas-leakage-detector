@@ -1,17 +1,21 @@
+// Setup for Blynk & WiFi
 #define BLYNK_PRINT Serial
-
-/* Fill in information from Blynk Device Info here */
 #define BLYNK_TEMPLATE_ID "TMPL62PSbydOu"
 #define BLYNK_TEMPLATE_NAME "Gas Detector"
 #define BLYNK_AUTH_TOKEN "4bVvaoCWg-55uSxbTkmhJEmAMOEY-Gs2"
-#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP 15       /* Time ESP32 will go to sleep (in seconds) */
-
-RTC_DATA_ATTR int bootCount = 0;
 
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
+
+
+// Setup for Deep Sleep mode
+#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP 15       /* Time ESP32 will go to sleep (in seconds) */
+
+// Save the number of bootCount
+RTC_DATA_ATTR int bootCount = 0;
+
 
 void print_wakeup_reason() {
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -28,11 +32,17 @@ void print_wakeup_reason() {
   }
 }
 
+// Setup for flash memory
+#include <Preferences.h>
+Preferences preferences;
+// preferences.begin("my-app", false);
+// String ssid_str = preferences.getString("ssid", "inti");
+// String pass_str = preferences.getString("pass", "laughtale");
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
-char ssid[] = "Pilat";
-char pass[] = "bayarpilat";
+// char ssid[] = ssid_str.c_str();
+// char pass[] = pass_str.c_str();
 
 char auth[] = BLYNK_AUTH_TOKEN;
 
@@ -90,6 +100,19 @@ void sendSensor() {
 
 }
 void setup() {
+  preferences.begin("my-app", false);
+  String ssid_str = preferences.getString("ssid", "inti");
+  String pass_str = preferences.getString("pass", "laughtale");
+
+  // const char ssid[] {ssid_str.c_str()};
+  // const char pass[] {pass_str.c_str()};
+  char ssid[20];
+  char pass[20];
+  ssid_str.toCharArray(ssid, sizeof(ssid));
+  pass_str.toCharArray(pass, sizeof(pass));
+  
+
+
   pinMode(smokeA0, INPUT);
   Serial.begin(115200);
   Blynk.begin(auth, ssid, pass);
