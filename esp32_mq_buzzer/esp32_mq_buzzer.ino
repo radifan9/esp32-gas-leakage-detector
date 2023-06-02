@@ -2,46 +2,61 @@
 
 // Moving Average Filter
 // https://maker.pro/arduino/tutorial/how-to-clean-up-noisy-sensor-data-with-a-moving-average-filter
-#define WINDOW_SIZE 10
-int i { 0 };
-int value { 0 };
-int sum { 0 };
-int readings[WINDOW_SIZE];
-int averaged { 0 };
+const int numReadings = 10;
 
-int buzzer = 4;         // Using low-level trigger - active buzzer(no oscilation needed)
-int sensorPin = 2;
+int readings[numReadings];  // the readings from the analog input
+int readIndex = 0;          // the index of the current reading
+int total = 0;              // the running total
+int average = 0;            // the average
+
+int buzzer = 10;         // Using low-level trigger - active buzzer(no oscilation needed)
+int sensorPin = 5;
 int sensorValue = 0;
 int threshold = 700;    // MQ-2 threshold value for LPG leakage
 
 void setup() {
+  pinMode(7, OUTPUT);
+  pinMode(10, OUTPUT);
+
+  digitalWrite(7, HIGH);
+  // digitalWrite(10, HIGH);
+
+  pinMode(6, OUTPUT);
+  digitalWrite(6, HIGH);
+
   pinMode(sensorPin, INPUT);
   pinMode(buzzer, OUTPUT);
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
 void loop() {
-  sensorValue = analogRead(sensorPin);
 
-  Serial.print(0); // To freeze the lower limit
-  Serial.print(" ");
-  Serial.print(1000); // To freeze the upper limit
-  Serial.print(" ");
 
   Serial.print("MQ-2 value:");
   Serial.print(sensorValue);
   Serial.print(",");
 
   // Moving Average Filter
-  sum = sum - readings[i];
-  value = sensorValue;
-  readings[i] = value;
-  i = (i+1) % WINDOW_SIZE;
+  // subtract the last reading:
+  total = total - readings[readIndex];
+  // read from the sensor:
+  readings[readIndex] = analogRead(sensorPin);
+  // add the reading to the total:
+  total = total + readings[readIndex];
+  // advance to the next position in the array:
+  readIndex = readIndex + 1;
 
-  averaged = sum / WINDOW_SIZE;
+  // if we're at the end of the array...
+  if (readIndex >= numReadings) {
+    // ...wrap around to the beginning:
+    readIndex = 0;
+  }
 
-  Serial.print("Averaged:");
-  Serial.println(averaged);
+  // calculate the average:
+  average = total / numReadings;
+  // send it to the computer as ASCII digits
+  Serial.println(average);
+  delay(1);  // delay in between reads for stability
 
   delay(250);
   // If MQ-2 value is higher than threshold alarm the buzzer

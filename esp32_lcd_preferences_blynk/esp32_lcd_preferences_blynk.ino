@@ -1,3 +1,8 @@
+// Pin Setup
+int i2c_tr = 6;
+int mq2_tr = 7;
+int buzzer_tr = 10;
+
 // Setup for LCD & KEYPAD
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -62,6 +67,14 @@ enum State {
 State currentState = ENTER_SSID; // Initial state
 
 void setup() {
+  // Pin Setup
+  pinMode(i2c_tr, OUTPUT);
+  digitalWrite(i2c_tr, HIGH);
+  pinMode(mq2_tr, OUTPUT);
+  digitalWrite(mq2_tr, LOW);
+  pinMode(buzzer_tr, OUTPUT);
+  digitalWrite(buzzer_tr, LOW);
+
   // Configuring Hardware
   Serial.begin(115200);
 
@@ -162,6 +175,19 @@ void loop() {
       break;
 
     case BLYNK_RUN:
+      lcd.clear();
+      lcd.print("  Connected to");
+      lcd.setCursor(0, 1);
+      lcd.print("     Blynk.");
+      delay(2000);
+
+      lcd.clear();
+      lcd.print("  Turning off");
+      lcd.setCursor(0, 1);
+      lcd.print(" LCD and keypad.");
+      delay(2000);
+
+      digitalWrite(i2c_tr, LOW);
       Blynk.run();
       timer.run();
       break;
