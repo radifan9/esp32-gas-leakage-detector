@@ -1,12 +1,21 @@
 // Pin & General Setup
-int i2c_tr = 6;
-int mq2_tr = 7;
-int buzzer_tr = 10;
-unsigned int counter;
+byte gas = 5;
+byte i2c_tr = 6;
+byte mq2_tr = 7;
+byte buzzer_tr = 10;
+byte counter;
+
+unsigned int data = 0;
+unsigned int sensorThres = 1000;
+
+byte num_sens = 0;
+byte num_sens_threshold = 10;
+
+byte lpg_triggered = 0;
 
 // Watchdog Timer
 #include <esp_task_wdt.h>
-#define WDT_TIMEOUT 10     // 10 seconds WDT
+#define WDT_TIMEOUT 8     // 8 seconds WDT
 
 // Setup for LCD & KEYPAD
 #include <Wire.h>
@@ -46,6 +55,9 @@ Preferences preferences;
 #define BLYNK_TEMPLATE_ID "TMPL62PSbydOu"
 #define BLYNK_TEMPLATE_NAME "Gas Detector"
 #define BLYNK_AUTH_TOKEN "4bVvaoCWg-55uSxbTkmhJEmAMOEY-Gs2"
+// #define BLYNK_TEMPLATE_ID "TMPL7LuxdKLE"
+// #define BLYNK_TEMPLATE_NAME "Quickstart Template"
+// #define BLYNK_AUTH_TOKEN "RRnopBaH6JFnPpFCvg1gm4pjt6K3e3Hg"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -59,6 +71,67 @@ char ssid_char[20];
 char pass_char[20];
 
 BlynkTimer timer;
+void sendSensor() {     // Fungsi untuk mengirim notifikasi
+
+  unsigned int data = analogRead(gas);
+  Blynk.virtualWrite(V5, data);
+  Serial.print("Nilai MQ-2: ");
+  Serial.println(data);
+  esp_task_wdt_reset();
+
+  if (data > 1000) {
+    Serial.println("-- Ada kebocoran gas --");
+    // Blynk.email("andikonak16@gmail.com", "Alert", "Gas Leakage Detected!");
+    Blynk.logEvent("gas_alert", "Ada Kebocoran Gas!!");
+    // digitalWrite(buzzer_tr, HIGH);   // Mematikan buzzer
+    danger();
+    delay(500);                 // Menahan buzzer selama 1 detik sebelum mengulang
+    // digitalWrite(buzzer_tr, LOW);  // Menghidupkan buzzer
+    delay(500);                 // Menahan buzzer selama 1 detik
+    lpg_triggered = 1;
+  } else {
+    digitalWrite(buzzer_tr, HIGH);
+    if (lpg_triggered == 1) {
+      num_sens = 0;
+      Serial.println("-- resetting number of sensing --");
+    }
+    lpg_triggered = 0;
+  }
+
+  if (lpg_triggered == 0) {
+    // Hitung berapa kali sensing untuk masuk ke mode sleep
+    Serial.print("Number of Sensing: ");
+    Serial.println(num_sens);
+
+    num_sens = num_sens + 1;
+    if (num_sens == num_sens_threshold) {
+      Serial.println("Going to sleep now");
+      esp_deep_sleep_start();
+    }
+  }
+}
+
+// Setup for Deep Sleep mode
+#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP 15       /* Time ESP32 will go to sleep (in seconds) */
+
+// Save the number of bootCount
+RTC_DATA_ATTR int bootCount = 0;
+
+void print_wakeup_reason() {
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch (wakeup_reason) {
+    case ESP_SLEEP_WAKEUP_EXT0: Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1: Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER: Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD: Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP: Serial.println("Wakeup caused by ULP program"); break;
+    default: Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeup_reason); break;
+  }
+}
 
 enum State {
   ENTER_SSID,
@@ -75,7 +148,8 @@ void reset_counter() {
   counter = preferences.getUInt("counter", 0);
   Serial.println();
   Serial.printf("wifi-retry counter value: %u\n", counter);
-  Serial.printf("-- wifi-retry counter reseted. --");
+  Serial.println("-- resetting wifi-retry counter --");
+  Serial.print("\n");
   counter = 0;
   preferences.putUInt("counter", counter);    // Store the counter to the Preferences
   preferences.end();  
@@ -107,6 +181,13 @@ void congrats_sound() {
 
 }
 
+void danger() {
+  delay(100);
+  tone(buzzer_tr,NOTE_E6,850);
+  delay(800);
+  noTone(buzzer_tr);
+}
+
 void setup() {
   // Hardware & Pin Setup
   pinMode(i2c_tr, OUTPUT);
@@ -115,8 +196,20 @@ void setup() {
   digitalWrite(mq2_tr, LOW);
   pinMode(buzzer_tr, OUTPUT);
   digitalWrite(buzzer_tr, LOW);
+  pinMode(gas, INPUT);
 
   Serial.begin(115200);
+
+  // Blynk timer
+  timer.setInterval(2500L, sendSensor);
+
+  // Sleep mode
+  ++bootCount;
+  Serial.println("Boot number: " + String(bootCount));
+  print_wakeup_reason();
+
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
 
   // Configuring I2C LCD and Keypad
   Wire.begin();          // Call the connection Wire
@@ -141,7 +234,6 @@ void setup() {
   // reset_counter();
 
   // Enable Watchdog timer
-  delay(2000);
   esp_task_wdt_init(WDT_TIMEOUT, true);
   esp_task_wdt_add(NULL);
 
@@ -204,6 +296,7 @@ void loop() {
       break;
 
     case AUTHENTICATE:
+      Serial.println("-- Entering AUTHENTICATE state --");
       esp_task_wdt_reset();
 
       lcd.clear();
@@ -229,13 +322,13 @@ void loop() {
 
       reset_counter();
 
-      delay(2000);
+      delay(1000);
 
       lcd.clear();
       lcd.print("  Connected to");
       lcd.setCursor(0, 1);
       lcd.print("     Blynk.");
-      delay(2000);
+      delay(1000);
 
       esp_task_wdt_reset();
 
@@ -243,10 +336,10 @@ void loop() {
       lcd.print("  Turning off");
       lcd.setCursor(0, 1);
       lcd.print(" LCD and keypad.");
-      delay(2000);
+      delay(1000);
       lcd.noBacklight();
       delay(500);
-      digitalWrite(i2c_tr, LOW);
+      digitalWrite(i2c_tr, HIGH);
 
       currentState = BLYNK_RUN;
       break;

@@ -8,10 +8,11 @@
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
 
+char auth[] = BLYNK_AUTH_TOKEN;
 
 // Setup for Deep Sleep mode
 #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP 15       /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP 30       /* Time ESP32 will go to sleep (in seconds) */
 
 // Save the number of bootCount
 RTC_DATA_ATTR int bootCount = 0;
@@ -35,20 +36,12 @@ void print_wakeup_reason() {
 // Setup for flash memory
 #include <Preferences.h>
 Preferences preferences;
-// preferences.begin("my-app", false);
-// String ssid_str = preferences.getString("ssid", "inti");
-// String pass_str = preferences.getString("pass", "laughtale");
 
-// Your WiFi credentials.
-// Set password to "" for open networks.
-// char ssid[] = ssid_str.c_str();
-// char pass[] = pass_str.c_str();
-
-char auth[] = BLYNK_AUTH_TOKEN;
-
-int smokeA0 = 4;
-int tr = 6;
-int buzzer = 7;
+// Pin & General Setup
+int gas = 5;
+int i2c_tr = 6;
+int mq2_tr = 7;
+int buzzer_tr = 10;
 
 int data = 0;
 int sensorThres = 1000;
@@ -62,25 +55,25 @@ BlynkTimer timer;
 
 void sendSensor() {
 
-  int data = analogRead(smokeA0);
+  int data = analogRead(gas);
   Blynk.virtualWrite(V0, data);
   Serial.print("Pin A0: ");
   Serial.println(data);
 
-
   if (data > 1000) {
     // Blynk.email("andikonak16@gmail.com", "Alert", "Gas Leakage Detected!");
     Blynk.logEvent("gas_alert", "Ada Kebocoran Gas!!");
-    digitalWrite(buzzer, LOW);   // Mematikan buzzer
+    digitalWrite(buzzer_tr, LOW);   // Mematikan buzzer
     delay(500);                 // Menahan buzzer selama 1 detik sebelum mengulang
-    digitalWrite(buzzer, HIGH);  // Menghidupkan buzzer
+    digitalWrite(buzzer_tr, HIGH);  // Menghidupkan buzzer
     delay(500);                 // Menahan buzzer selama 1 detik
     lpg_triggered = 1;
   } else {
-     digitalWrite(buzzer, LOW);
+     digitalWrite(buzzer_tr, LOW);
 
       if (lpg_triggered == 1) {
-        num_sens_threshold = num_sens_threshold + 2;
+        num_sens = 0;
+        Serial.println("-- resetting number of sensing --");
       }
      lpg_triggered = 0;
   }
@@ -96,16 +89,13 @@ void sendSensor() {
       esp_deep_sleep_start();
     }
   }
-  
-
 }
+
 void setup() {
   preferences.begin("my-app", false);
-  String ssid_str = preferences.getString("ssid", "inti");
-  String pass_str = preferences.getString("pass", "laughtale");
+  String ssid_str = preferences.getString("ssid", "BCCC");
+  String pass_str = preferences.getString("pass", "12345678");
 
-  // const char ssid[] {ssid_str.c_str()};
-  // const char pass[] {pass_str.c_str()};
   char ssid[20];
   char pass[20];
   ssid_str.toCharArray(ssid, sizeof(ssid));
@@ -113,17 +103,17 @@ void setup() {
   
 
 
-  pinMode(smokeA0, INPUT);
+  pinMode(gas, INPUT);
   Serial.begin(115200);
   Blynk.begin(auth, ssid, pass);
   //dht.begin();
   timer.setInterval(2500L, sendSensor);
 
-  pinMode(tr, OUTPUT);
-  digitalWrite(tr, HIGH);
+  pinMode(mq2_tr, OUTPUT);
+  digitalWrite(mq2_tr, HIGH);
 
-  pinMode(buzzer, OUTPUT);
-  digitalWrite(buzzer, LOW);
+  pinMode(buzzer_tr, OUTPUT);
+  digitalWrite(buzzer_tr, LOW);
 
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
