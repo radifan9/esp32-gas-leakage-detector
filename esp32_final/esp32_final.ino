@@ -22,7 +22,6 @@ byte lpg_triggered = 0;
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
 #include <Keypad_I2C.h>
-#include <EEPROM.h> // Include the EEPROM library
 
 #define I2CADDR_KEYPAD 0x38 // Set the Address of the PCF8574 for the keypad
 #define I2CADDR_LCD 0x27    // Set the Address of the I2C LCD
@@ -74,6 +73,7 @@ BlynkTimer timer;
 void sendSensor() {     // Fungsi untuk mengirim notifikasi
 
   unsigned int data = analogRead(gas);
+  click_sound();
   Blynk.virtualWrite(V5, data);
   Serial.print("Nilai MQ-2: ");
   Serial.println(data);
