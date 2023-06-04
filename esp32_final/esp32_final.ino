@@ -5,6 +5,8 @@ byte mq2_tr = 7;
 byte buzzer_tr = 10;
 byte counter;
 
+unsigned long start_time = 0;
+
 unsigned int data = 0;
 unsigned int sensorThres = 1000;
 
@@ -74,7 +76,7 @@ void sendSensor() {     // Fungsi untuk mengirim notifikasi
 
   unsigned int data = analogRead(gas);
   click_sound();
-  Blynk.virtualWrite(V5, data);
+  Blynk.virtualWrite(V0, data);
   Serial.print("Nilai MQ-2: ");
   Serial.println(data);
   esp_task_wdt_reset();
@@ -106,7 +108,7 @@ void sendSensor() {     // Fungsi untuk mengirim notifikasi
     num_sens = num_sens + 1;
     if (num_sens == num_sens_threshold) {
       Serial.println("Going to sleep now");
-      delay(500);
+      Serial.printf("Stopwatch start to sleep: %u\n", millis() - start_time);
       danger();
       esp_deep_sleep_start();
     }
@@ -191,6 +193,9 @@ void danger() {
 }
 
 void setup() {
+  // Stopwatch
+  start_time = millis();
+
   // Hardware & Pin Setup
   pinMode(i2c_tr, OUTPUT);
   digitalWrite(i2c_tr, HIGH);
@@ -253,6 +258,7 @@ void loop() {
   // State machine logic
   switch (currentState) {
     case ENTER_SSID:
+      digitalWrite(mq2_tr, LOW);
       if (key != NO_KEY) {
         if (key == '#') {
           click_sound();
@@ -352,7 +358,7 @@ void loop() {
 
       digitalWrite(mq2_tr, HIGH);
       
-      // Blynk.run();
+      Blynk.run();
       timer.run();
       break;
   }
