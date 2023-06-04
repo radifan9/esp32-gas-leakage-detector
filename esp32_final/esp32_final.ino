@@ -8,7 +8,7 @@ byte counter;
 unsigned int data = 0;
 unsigned int sensorThres = 1000;
 
-byte num_sens = 0;
+byte num_sens = 1;
 byte num_sens_threshold = 10;
 
 byte lpg_triggered = 0;
@@ -92,7 +92,7 @@ void sendSensor() {     // Fungsi untuk mengirim notifikasi
   } else {
     digitalWrite(buzzer_tr, HIGH);
     if (lpg_triggered == 1) {
-      num_sens = 0;
+      num_sens = 1;
       Serial.println("-- resetting number of sensing --");
     }
     lpg_triggered = 0;
@@ -106,6 +106,8 @@ void sendSensor() {     // Fungsi untuk mengirim notifikasi
     num_sens = num_sens + 1;
     if (num_sens == num_sens_threshold) {
       Serial.println("Going to sleep now");
+      delay(500);
+      danger();
       esp_deep_sleep_start();
     }
   }
@@ -113,7 +115,7 @@ void sendSensor() {     // Fungsi untuk mengirim notifikasi
 
 // Setup for Deep Sleep mode
 #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP 15       /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP 20       /* Time ESP32 will go to sleep (in seconds) */
 
 // Save the number of bootCount
 RTC_DATA_ATTR int bootCount = 0;
@@ -201,7 +203,7 @@ void setup() {
   Serial.begin(115200);
 
   // Blynk timer
-  timer.setInterval(2500L, sendSensor);
+  timer.setInterval(3000L, sendSensor);
 
   // Sleep mode
   ++bootCount;
@@ -339,17 +341,18 @@ void loop() {
       delay(1000);
       lcd.noBacklight();
       delay(500);
-      digitalWrite(i2c_tr, HIGH);
+      digitalWrite(i2c_tr, HIGH);     
 
       currentState = BLYNK_RUN;
       break;
 
     case BLYNK_RUN:
+      // Serial.println("-- Entering BLYNK_RUN state --");
       esp_task_wdt_reset();
 
       digitalWrite(mq2_tr, HIGH);
       
-      Blynk.run();
+      // Blynk.run();
       timer.run();
       break;
   }
